@@ -1,20 +1,20 @@
-const {Events, Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Events, Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const mysql = require('mysql');
 const discordTransripts = require('discord-html-transcripts');
 require('dotenv').config();
 const { logToChannel, logIntaketoChannel } = require('./logger.js');
 const { isValidDate, reformatDate, convertToSQLDateTime } = require('./utils.js');
-const {createNewChannel} = require('./createChannel.js')
+const { createNewChannel } = require('./createChannel.js')
 
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent] });
 
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
 });
 
 client.once('ready', () => {
@@ -50,52 +50,68 @@ async function checkAcceptedStatus() {
             const trimmedDepartment = department.trim();
             const channelName = `intake-${ticketId}-${trimmedDepartment}`;
 
-            const user = await guild.members.fetch(results[i].discord);
-            if (user) {
-                // Check if there's already a channel with the same ticketId but different department
-                const existingChannel = guild.channels.cache.find(channel => {
-                    const existingTicketId = channel.name.split('-')[1];
-                    const existingDepartment = channel.name.split('-')[2];
-                    return existingTicketId === ticketId && existingDepartment !== trimmedDepartment;
-                });
-                if (existingChannel) {
-                    // Delete the old channel
-                    await existingChannel.send(process.env.DEPARTMENT_CHANGED_MESSAGE)
-                    const attachment = await discordTransripts.createTranscript(existingChannel, {
-                        limit: -1,
-                        returnType: 'attachment',
-                        filename: `${existingChannel.name}.html`,
-                        saveImages: true,
-                        footerText: "Exported {number} message{s}",
-                        poweredBy: false
-                    })
-                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}) for <@${results[i].discord}> automatically deleted, users's department was changed.`, [255, 0, 0])
-                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({files: [attachment]})
-                    await existingChannel.delete();
-                    
-                    const channel = guild.channels.cache.find(channel => channel.name === channelName);
-            
-                    if (channel) {
-                        
-                    } else {
-                        createNewChannel(client, guild, department, results[i], channelName, ticketId);
-                    }
+            try {
+                const banList = await guild.bans.fetch();
+                const targetId = banList.get(results[i].discord)
+                if (targetId) {
+                    //User is not in the server, no logging to prevent spamming
                 } else {
-                    // Check if the channel exists with the specified name
-                    const channel = guild.channels.cache.find(channel => channel.name === channelName);
-            
-                    if (channel) {
+                    try {
+                        const user = await guild.members.fetch(results[i].discord).then(() => true).catch(() => false);
+                        if (user) {
+                            // Check if there's already a channel with the same ticketId but different department
+                            const existingChannel = guild.channels.cache.find(channel => {
+                                const existingTicketId = channel.name.split('-')[1];
+                                const existingDepartment = channel.name.split('-')[2];
+                                return existingTicketId === ticketId && existingDepartment !== trimmedDepartment;
+                            });
+                            if (existingChannel) {
+                                // Delete the old channel
+                                await existingChannel.send(process.env.DEPARTMENT_CHANGED_MESSAGE)
+                                const attachment = await discordTransripts.createTranscript(existingChannel, {
+                                    limit: -1,
+                                    returnType: 'attachment',
+                                    filename: `${existingChannel.name}.html`,
+                                    saveImages: true,
+                                    footerText: "Exported {number} message{s}",
+                                    poweredBy: false
+                                })
+                                logIntaketoChannel(client, `Intake channel (${existingChannel.name}) for <@${results[i].discord}> automatically deleted, users's department was changed.`, [255, 0, 0])
+                                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                                await existingChannel.delete();
 
-                    } else {
-                        createNewChannel(client, guild, department, results[i], channelName, ticketId);
+                                const channel = guild.channels.cache.find(channel => channel.name === channelName);
+
+                                if (channel) {
+
+                                } else {
+                                    createNewChannel(client, guild, department, results[i], channelName, ticketId);
+                                }
+                            } else {
+                                // Check if the channel exists with the specified name
+                                const channel = guild.channels.cache.find(channel => channel.name === channelName);
+
+                                if (channel) {
+
+                                } else {
+                                    createNewChannel(client, guild, department, results[i], channelName, ticketId);
+                                }
+                            }
+                        } else {
+                            //User is not in the server, no logging to prevent spamming
+                        }
+                    } catch (error) {
+                        logToChannel(client, "error", error);
+                        console.error(error);
                     }
                 }
-            } else {
-                logIntaketoChannel(client, `Tried to make a new channel but user with ID "${results[i].discord}" is not in the Discord server.`, [255, 0, 0]);
+            } catch (error) {
+                logToChannel(client, "error", error);
+                console.error(error);
             }
         }
     } catch (error) {
-        logToChannel(client, error);
+        logToChannel(client, "error", error);
         console.error(error);
     }
 }
@@ -109,7 +125,7 @@ async function plannedIntake(interaction, formattedDate) {
             return new Promise((resolve, reject) => {
                 pool.query(query, [discordId], (error, results, fields) => {
                     if (error) {
-                        logToChannel(client, error)
+                        logToChannel(client, "error", error)
                         reject(error);
                     } else {
                         resolve(results[0]);
@@ -128,7 +144,7 @@ async function plannedIntake(interaction, formattedDate) {
             const updateQuery = 'UPDATE aanmeldingen SET callAppointment = ? WHERE discord = ?';
             pool.query(updateQuery, [formatDate, discordId], (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, error)
+                    logToChannel(client, "error", error)
                     console.error('Error updating appointment data in callAppointment table:', error);
                 } else {
                     const callPlannedEmbed = new EmbedBuilder()
@@ -137,12 +153,12 @@ async function plannedIntake(interaction, formattedDate) {
                         .setDescription(`${process.env.CALL_PLANNED_MESSAGE}`, true)
                         .setFooter({ text: process.env.FOOTER_MESSAGE, iconURL: process.env.FOOTER_IMAGE });
                     const ts3InstallEmbed = new EmbedBuilder()
-                        .setColor([0,255,0])
+                        .setColor([0, 255, 0])
                         .setDescription(`[${process.env.TS3_INSTALL_MESSAGE}](${process.env.TS3_INSTALL_LINK})`)
                     const ts3HelpEmbed = new EmbedBuilder()
-                        .setColor([0,255,0])
+                        .setColor([0, 255, 0])
                         .setDescription(`[${process.env.TS3_HELP_MESSAGE}](${process.env.TS3_HELP_LINK})`)
-                    interaction.message.channel.send({content: `<@${discordId}>`, embeds: [callPlannedEmbed, ts3InstallEmbed, ts3HelpEmbed]})
+                    interaction.message.channel.send({ content: `<@${discordId}>`, embeds: [callPlannedEmbed, ts3InstallEmbed, ts3HelpEmbed] })
                     logIntaketoChannel(client, `Intake for channel (<#${interaction.message.channel.id}>) for <@${discordId}>, succesfully planned with date; ${formattedDate}. By; <@${interaction.user.id}>`, [0, 95, 255])
                     //Reset the topic to 0 so it will still remind the users
                     if (interaction.message.channel.topic != "0") {
@@ -154,7 +170,7 @@ async function plannedIntake(interaction, formattedDate) {
             console.log('User not found.');
         }
     } catch (error) {
-        logToChannel(client, error)
+        logToChannel(client, "error", error)
         console.error('Error:', error);
     }
 }
@@ -163,7 +179,7 @@ async function plannedIntake(interaction, formattedDate) {
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.customId === 'plan_date_button') {
-        if(interaction.member.roles.cache.has(process.env.INTAKE_ROLE_ID)) {
+        if (interaction.member.roles.cache.has(process.env.INTAKE_ROLE_ID)) {
             await interaction.reply({ content: process.env.CANT_PLAN_MESSAGE, ephemeral: true });
             return;
         } else {
@@ -184,19 +200,19 @@ client.on(Events.InteractionCreate, async interaction => {
                 modal.addComponents(firstRow)
 
                 await interaction.showModal(modal)
-        
+
             } catch (error) {
                 console.error('Error handling date input:', error.message);
-                logToChannel(client, error)
+                logToChannel(client, "error", error)
             }
         }
     }
     if (interaction.customId === 'date_Modal') {
         const dateInput = interaction.fields.getTextInputValue('dateInput');
-        
+
         // Regular expression to match the format "DD-MM-YYYY HH:mm"
         const dateRegex = /^([0-2]\d|3[01])-(0\d|1[0-2])-(\d{4})\s+([01]\d|2[0-3]):([0-5]\d)$/;
-        
+
         // Check if the date input matches the expected format
         if (dateRegex.test(dateInput)) {
             // Now parse the date string into a Date object for additional checks
@@ -226,7 +242,7 @@ async function checkCallAppointments() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, error)
+                    logToChannel(client, "error", error)
                     reject(error);
                 } else {
                     resolve(results);
@@ -257,7 +273,7 @@ async function checkCallAppointments() {
                         const dayReminderEmbed = new EmbedBuilder()
                             .setTitle(`${process.env.DAY_APPOINTMENT_MESSAGE}${formattedDate}`)
                             .setDescription(`${process.env.DAY_REMINDER_MESSAGE}`)
-                        await channel.send({content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [dayReminderEmbed]});
+                        await channel.send({ content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [dayReminderEmbed] });
                         await channel.setTopic('1')
                     }
                 }
@@ -270,14 +286,14 @@ async function checkCallAppointments() {
                         const halfHourReminderEmbed = new EmbedBuilder()
                             .setTitle(`${process.env.DAY_APPOINTMENT_MESSAGE}${formattedDate}`)
                             .setDescription(`${process.env.HALF_HOUR_REMINDER_MESSAGE}**${timeDifferenceInMinutes}**${process.env.HALF_HOUR_REMINDER_2_MESSAGE}`)
-                        await channel.send({content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [halfHourReminderEmbed]});
+                        await channel.send({ content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [halfHourReminderEmbed] });
                         await channel.setTopic('2')
                     }
                 }
             }
         }
     } catch (error) {
-        logToChannel(client, error)
+        logToChannel(client, "error", error)
         console.error(error);
     }
 }
@@ -293,7 +309,7 @@ async function checkChannelDeletionAndChange() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, error)
+                    logToChannel(client, "error", error)
                     reject(error);
                 } else {
                     resolve(results);
@@ -318,12 +334,12 @@ async function checkChannelDeletionAndChange() {
                     poweredBy: false
                 })
                 logIntaketoChannel(client, `Intake channel (${channelName}) for <@${user.discord}> automatically deleted, user was accepted.`, [255, 0, 0])
-                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({files: [attachment]})
+                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                 await channel.delete()
             }
         }
     } catch (error) {
-        logToChannel(client, error)
+        logToChannel(client, "error", error)
         console.error(error);
     }
 
@@ -333,7 +349,7 @@ async function checkChannelDeletionAndChange() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query2, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, error)
+                    logToChannel(client, "error", error)
                     reject(error);
                 } else {
                     resolve(results);
@@ -358,12 +374,12 @@ async function checkChannelDeletionAndChange() {
                     poweredBy: false
                 })
                 logIntaketoChannel(client, `Intake channel (<#${channel.name}>) for <@${user.discord}> automatically deleted, user was denied.`, [255, 0, 0])
-                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({files: [attachment]})
+                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                 await channel.delete()
             }
         }
     } catch (error) {
-        logToChannel(client, error)
+        logToChannel(client, "error", error)
         console.error(error);
     }
 }
