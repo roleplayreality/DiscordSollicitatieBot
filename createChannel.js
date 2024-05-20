@@ -72,7 +72,7 @@ async function createNewChannel (client, guild, department, results, channelName
 
     await channelN.send({content: `||<@${results.discord}> <@&${process.env[`${trimmedDepartment.toUpperCase()}_ROLE_ID`]}> <@&${process.env.OM_ROLE_ID}> ||`,embeds:[welcomeEmbed], components: [buttonRow]})
 
-    logIntaketoChannel(client, `Created channel (<#${channelN.id}>) for <@${results.discord}>`, [0, 255, 0])
+    logIntaketoChannel(client, `Created channel (<#${channelN.id}> ${channelN.name}) for <@${results.discord}> (${results.discord})`, [0, 255, 0])
 }
 
 module.exports = {createNewChannel}
