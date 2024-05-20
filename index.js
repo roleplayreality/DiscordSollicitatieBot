@@ -44,9 +44,7 @@ async function checkAcceptedStatus() {
         }
 
         for (let i = 0; i < results.length; i++) {
-            if (!results[i].discord) {
-
-            } else {
+            if (results[i].discord) {
                 try {
                     const guild = client.guilds.cache.get(process.env.GUILD_ID);
                     const banList = await guild.bans.fetch();
@@ -254,9 +252,7 @@ async function checkCallAppointments() {
         });
 
         for (let i = 0; i < results.length; i++) {
-            if (!results[i].discord) {
-
-            } else {
+            if (results[i].discord) {
                 const user = results[i];
                 const guild = client.guilds.cache.get(process.env.GUILD_ID);
                 const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
@@ -325,9 +321,7 @@ async function checkChannelDeletionAndChange() {
         });
 
         for (let i = 0; i < results.length; i++) {
-            if (!results[i].discord) {
-            
-            } else {
+            if (results[i].discord) {
                 const user = results[i];
                 const guild = client.guilds.cache.get(process.env.GUILD_ID);
                 const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
@@ -369,7 +363,7 @@ async function checkChannelDeletionAndChange() {
         });
 
         for (let i = 0; i < results.length; i++) {
-            if (!results[i].discord) {
+            if (results[i].discord) {
                 const user = results[i];
                 const guild = client.guilds.cache.get(process.env.GUILD_ID);
                 const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
