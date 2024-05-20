@@ -55,7 +55,7 @@ async function checkAcceptedStatus() {
                         try {
                             const user = await guild.members.fetch(results[i].discord).then(() => true).catch(() => false);
                             if (user) {
-                                const ticketId = results[i].discord.slice(-4);
+                                const ticketId = results[i].id
                                 const department = results[i].department.toLowerCase();
                                 const trimmedDepartment = department.trim();
                                 const channelName = `intake-${ticketId}-${trimmedDepartment}`;
@@ -76,7 +76,7 @@ async function checkAcceptedStatus() {
                                         footerText: "Exported {number} message{s}",
                                         poweredBy: false
                                     })
-                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}) for <@${results[i].discord}> automatically deleted, users's department was changed.`, [255, 0, 0])
+                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.id}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0])
                                     await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                                     await existingChannel.delete();
 
@@ -106,14 +106,14 @@ async function checkAcceptedStatus() {
                         }
                     }
                 } catch (error) {
-                    logToChannel(client, "error", error);
-                    console.error(error);
+                    logToChannel(client, "error", error.stack);
+                    console.error(error, error.stack);
                 }
             }
         }
     } catch (error) {
-        logToChannel(client, "error", error);
-        console.error(error);
+        logToChannel(client, "error", error.stack);
+        console.error(error, error.stack);
     }
 }
 setInterval(checkAcceptedStatus, process.env.CREATION_INTERVAL);
@@ -126,8 +126,8 @@ async function plannedIntake(interaction, formattedDate) {
             return new Promise((resolve, reject) => {
                 pool.query(query, [discordId], (error, results, fields) => {
                     if (error) {
-                        logToChannel(client, "error", error)
-                        reject(error);
+                        logToChannel(client, "error", error.stack)
+                        reject(error, error.stack);
                     } else {
                         resolve(results[0]);
                     }
@@ -160,7 +160,7 @@ async function plannedIntake(interaction, formattedDate) {
                         .setColor([0, 255, 0])
                         .setDescription(`[${process.env.TS3_HELP_MESSAGE}](${process.env.TS3_HELP_LINK})`)
                     interaction.message.channel.send({ content: `<@${discordId}>`, embeds: [callPlannedEmbed, ts3InstallEmbed, ts3HelpEmbed] })
-                    logIntaketoChannel(client, `Intake for channel (<#${interaction.message.channel.id}>) for <@${discordId}>, succesfully planned with date; ${formattedDate}. By; <@${interaction.user.id}>`, [0, 95, 255])
+                    logIntaketoChannel(client, `Intake for channel (<#${interaction.message.channel.id}>, ${interaction.message.channel.id}) for <@${discordId}> (${discordId}), succesfully planned with date; ${formattedDate}. By; <@${interaction.user.id}> (${interaction.user.id})`, [0, 95, 255])
                     //Reset the topic to 0 so it will still remind the users
                     if (interaction.message.channel.topic != "0") {
                         interaction.message.channel.setTopic('0')
@@ -171,8 +171,8 @@ async function plannedIntake(interaction, formattedDate) {
             console.log('User not found.');
         }
     } catch (error) {
-        logToChannel(client, "error", error)
-        console.error('Error:', error);
+        logToChannel(client, "error", error.stack)
+        console.error('Error:', error, error.stack);
     }
 }
 
@@ -203,8 +203,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.showModal(modal)
 
             } catch (error) {
-                console.error('Error handling date input:', error.message);
-                logToChannel(client, "error", error)
+                console.error('Error handling date input:', error, error.stack);
+                logToChannel(client, "error", error.stack)
             }
         }
     }
@@ -243,8 +243,8 @@ async function checkCallAppointments() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, "error", error)
-                    reject(error);
+                    logToChannel(client, "error", error.stack)
+                    reject(error, error.stack);
                 } else {
                     resolve(results);
                 }
@@ -296,8 +296,8 @@ async function checkCallAppointments() {
             }
         }
     } catch (error) {
-        logToChannel(client, "error", error)
-        console.error(error);
+        logToChannel(client, "error", error.stack)
+        console.error(error, error.stack);
     }
 }
 // Run the function every 5 minutes
@@ -312,8 +312,8 @@ async function checkChannelDeletionAndChange() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, "error", error)
-                    reject(error);
+                    logToChannel(client, "error", error.stack)
+                    reject(error, error.stack);
                 } else {
                     resolve(results);
                 }
@@ -324,7 +324,7 @@ async function checkChannelDeletionAndChange() {
             if (results[i].discord) {
                 const user = results[i];
                 const guild = client.guilds.cache.get(process.env.GUILD_ID);
-                const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
+                const channelName = `intake-${user.id}-${user.department.toLowerCase().trim()}`;
                 const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
                 if (channel) {
@@ -337,15 +337,15 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}) for <@${user.discord}> automatically deleted, user was accepted.`, [255, 0, 0])
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.id}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0])
                     await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                     await channel.delete()
                 }
             }
         }
     } catch (error) {
-        logToChannel(client, "error", error)
-        console.error(error);
+        logToChannel(client, "error", error.stack)
+        console.error(error, error.stack);
     }
 
     //Not accepted people
@@ -354,8 +354,8 @@ async function checkChannelDeletionAndChange() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query2, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, "error", error)
-                    reject(error);
+                    logToChannel(client, "error", error.stack)
+                    reject(error, error.stack);
                 } else {
                     resolve(results);
                 }
@@ -366,7 +366,7 @@ async function checkChannelDeletionAndChange() {
             if (results[i].discord) {
                 const user = results[i];
                 const guild = client.guilds.cache.get(process.env.GUILD_ID);
-                const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
+                const channelName = `intake-${user.id}-${user.department.toLowerCase().trim()}`;
                 const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
                 if (channel) {
@@ -379,15 +379,15 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (<#${channel.name}>) for <@${user.discord}> automatically deleted, user was denied.`, [255, 0, 0])
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.id}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0])
                     await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                     await channel.delete()
                 }
             }
         }
     } catch (error) {
-        logToChannel(client, "error", error)
-        console.error(error);
+        logToChannel(client, "error", error.stack)
+        console.error(error, error.stack);
     }
 }
 setInterval(checkChannelDeletionAndChange, process.env.DELETION_INTERVAL);
