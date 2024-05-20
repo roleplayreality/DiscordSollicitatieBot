@@ -48,6 +48,7 @@ async function checkAcceptedStatus() {
 
             } else {
                 try {
+                    const guild = client.guilds.cache.get(process.env.GUILD_ID);
                     const banList = await guild.bans.fetch();
                     const targetId = banList.get(results[i].discord)
                     if (targetId) {
@@ -57,7 +58,6 @@ async function checkAcceptedStatus() {
                             const user = await guild.members.fetch(results[i].discord).then(() => true).catch(() => false);
                             if (user) {
                                 const ticketId = results[i].discord.slice(-4);
-                                const guild = client.guilds.cache.get(process.env.GUILD_ID);
                                 const department = results[i].department.toLowerCase();
                                 const trimmedDepartment = department.trim();
                                 const channelName = `intake-${ticketId}-${trimmedDepartment}`;
