@@ -33,6 +33,10 @@ async function createNewChannel (client, guild, department, results, channelName
             {
                 id: process.env[`${trimmedDepartment.toUpperCase()}_ROLE_ID`], 
                 allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] 
+            },
+            {
+                id: client.application.id, 
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] 
             }
         ]
     })
