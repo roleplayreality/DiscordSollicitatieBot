@@ -20,19 +20,19 @@ async function createNewChannel (client, guild, department, results, channelName
             },
             {
                 id: discordUser,
-                allow: [PermissionsBitField.Flags.ViewChannel]
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
             },
             {
                 id: process.env.AM_ROLE_ID,
-                allow: [PermissionsBitField.Flags.ViewChannel]
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
             },
             {
                 id: process.env.OM_ROLE_ID,
-                allow: [PermissionsBitField.Flags.ViewChannel] 
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] 
             },
             {
                 id: process.env[`${trimmedDepartment.toUpperCase()}_ROLE_ID`], 
-                allow: [PermissionsBitField.Flags.ViewChannel] 
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] 
             }
         ]
     })
