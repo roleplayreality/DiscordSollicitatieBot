@@ -36,7 +36,7 @@ async function createNewChannel (client, guild, department, results, channelName
             },
             {
                 id: client.application.id, 
-                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] 
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels] 
             }
         ]
     })
