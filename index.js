@@ -44,70 +44,73 @@ async function checkAcceptedStatus() {
         }
 
         for (let i = 0; i < results.length; i++) {
-            const ticketId = results[i].discord.slice(-4);
-            const guild = client.guilds.cache.get(process.env.GUILD_ID);
-            const department = results[i].department.toLowerCase();
-            const trimmedDepartment = department.trim();
-            const channelName = `intake-${ticketId}-${trimmedDepartment}`;
+            if (!results[i].discord) {
 
-            try {
-                const banList = await guild.bans.fetch();
-                const targetId = banList.get(results[i].discord)
-                if (targetId) {
-                    //User is not in the server, no logging to prevent spamming
-                } else {
-                    try {
-                        const user = await guild.members.fetch(results[i].discord).then(() => true).catch(() => false);
-                        if (user) {
-                            // Check if there's already a channel with the same ticketId but different department
-                            const existingChannel = guild.channels.cache.find(channel => {
-                                const existingTicketId = channel.name.split('-')[1];
-                                const existingDepartment = channel.name.split('-')[2];
-                                return existingTicketId === ticketId && existingDepartment !== trimmedDepartment;
-                            });
-                            if (existingChannel) {
-                                // Delete the old channel
-                                await existingChannel.send(process.env.DEPARTMENT_CHANGED_MESSAGE)
-                                const attachment = await discordTransripts.createTranscript(existingChannel, {
-                                    limit: -1,
-                                    returnType: 'attachment',
-                                    filename: `${existingChannel.name}.html`,
-                                    saveImages: true,
-                                    footerText: "Exported {number} message{s}",
-                                    poweredBy: false
-                                })
-                                logIntaketoChannel(client, `Intake channel (${existingChannel.name}) for <@${results[i].discord}> automatically deleted, users's department was changed.`, [255, 0, 0])
-                                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
-                                await existingChannel.delete();
+            } else {
+                try {
+                    const banList = await guild.bans.fetch();
+                    const targetId = banList.get(results[i].discord)
+                    if (targetId) {
+                        //User is not in the server, no logging to prevent spamming
+                    } else {
+                        try {
+                            const user = await guild.members.fetch(results[i].discord).then(() => true).catch(() => false);
+                            if (user) {
+                                const ticketId = results[i].discord.slice(-4);
+                                const guild = client.guilds.cache.get(process.env.GUILD_ID);
+                                const department = results[i].department.toLowerCase();
+                                const trimmedDepartment = department.trim();
+                                const channelName = `intake-${ticketId}-${trimmedDepartment}`;
+                                // Check if there's already a channel with the same ticketId but different department
+                                const existingChannel = guild.channels.cache.find(channel => {
+                                    const existingTicketId = channel.name.split('-')[1];
+                                    const existingDepartment = channel.name.split('-')[2];
+                                    return existingTicketId === ticketId && existingDepartment !== trimmedDepartment;
+                                });
+                                if (existingChannel) {
+                                    // Delete the old channel
+                                    await existingChannel.send(process.env.DEPARTMENT_CHANGED_MESSAGE)
+                                    const attachment = await discordTransripts.createTranscript(existingChannel, {
+                                        limit: -1,
+                                        returnType: 'attachment',
+                                        filename: `${existingChannel.name}.html`,
+                                        saveImages: true,
+                                        footerText: "Exported {number} message{s}",
+                                        poweredBy: false
+                                    })
+                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}) for <@${results[i].discord}> automatically deleted, users's department was changed.`, [255, 0, 0])
+                                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                                    await existingChannel.delete();
 
-                                const channel = guild.channels.cache.find(channel => channel.name === channelName);
+                                    const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
-                                if (channel) {
+                                    if (channel) {
 
+                                    } else {
+                                        createNewChannel(client, guild, department, results[i], channelName, ticketId);
+                                    }
                                 } else {
-                                    createNewChannel(client, guild, department, results[i], channelName, ticketId);
+                                    // Check if the channel exists with the specified name
+                                    const channel = guild.channels.cache.find(channel => channel.name === channelName);
+
+                                    if (channel) {
+
+                                    } else {
+                                        createNewChannel(client, guild, department, results[i], channelName, ticketId);
+                                    }
                                 }
                             } else {
-                                // Check if the channel exists with the specified name
-                                const channel = guild.channels.cache.find(channel => channel.name === channelName);
-
-                                if (channel) {
-
-                                } else {
-                                    createNewChannel(client, guild, department, results[i], channelName, ticketId);
-                                }
+                                //User is not in the server, no logging to prevent spamming
                             }
-                        } else {
-                            //User is not in the server, no logging to prevent spamming
+                        } catch (error) {
+                            logToChannel(client, "error", error);
+                            console.error(error);
                         }
-                    } catch (error) {
-                        logToChannel(client, "error", error);
-                        console.error(error);
                     }
+                } catch (error) {
+                    logToChannel(client, "error", error);
+                    console.error(error);
                 }
-            } catch (error) {
-                logToChannel(client, "error", error);
-                console.error(error);
             }
         }
     } catch (error) {
@@ -251,43 +254,47 @@ async function checkCallAppointments() {
         });
 
         for (let i = 0; i < results.length; i++) {
-            const user = results[i];
-            const guild = client.guilds.cache.get(process.env.GUILD_ID);
-            const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
-            const channel = guild.channels.cache.find(channel => channel.name === channelName);
+            if (!results[i].discord) {
 
-            if (channel) {
-                // Calculate time difference between now and call appointment time
-                const callAppointmentTime = new Date(user.callAppointment);
-                const currentTime = new Date();
-                const timeDifference = callAppointmentTime - currentTime;
+            } else {
+                const user = results[i];
+                const guild = client.guilds.cache.get(process.env.GUILD_ID);
+                const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
+                const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
-                // Calculate time difference in minutes
-                const timeDifferenceInMinutes = Math.floor(timeDifference / (1000 * 60));
+                if (channel) {
+                    // Calculate time difference between now and call appointment time
+                    const callAppointmentTime = new Date(user.callAppointment);
+                    const currentTime = new Date();
+                    const timeDifference = callAppointmentTime - currentTime;
 
-                // Check if call appointment is 24 hours away (with a margin of 15 minutes)
-                if (timeDifferenceInMinutes >= (24 * 60 - 15) && timeDifferenceInMinutes <= (24 * 60 + 15)) {
-                    if (channel.topic === "0") {
-                        const formattedDate = reformatDate(user.callAppointment)
-                        const department = user.department.trim()
-                        const dayReminderEmbed = new EmbedBuilder()
-                            .setTitle(`${process.env.DAY_APPOINTMENT_MESSAGE}${formattedDate}`)
-                            .setDescription(`${process.env.DAY_REMINDER_MESSAGE}`)
-                        await channel.send({ content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [dayReminderEmbed] });
-                        await channel.setTopic('1')
+                    // Calculate time difference in minutes
+                    const timeDifferenceInMinutes = Math.floor(timeDifference / (1000 * 60));
+
+                    // Check if call appointment is 24 hours away (with a margin of 15 minutes)
+                    if (timeDifferenceInMinutes >= (24 * 60 - 15) && timeDifferenceInMinutes <= (24 * 60 + 15)) {
+                        if (channel.topic === "0") {
+                            const formattedDate = reformatDate(user.callAppointment)
+                            const department = user.department.trim()
+                            const dayReminderEmbed = new EmbedBuilder()
+                                .setTitle(`${process.env.DAY_APPOINTMENT_MESSAGE}${formattedDate}`)
+                                .setDescription(`${process.env.DAY_REMINDER_MESSAGE}`)
+                            await channel.send({ content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [dayReminderEmbed] });
+                            await channel.setTopic('1')
+                        }
                     }
-                }
 
-                // Check if call appointment is 30 minutes away (with a margin of 5 minutes)
-                if (timeDifferenceInMinutes >= (30 - 5) && timeDifferenceInMinutes <= (30 + 5)) {
-                    if (channel.topic === "0" || channel.topic === "1") {
-                        const formattedDate = reformatDate(user.callAppointment)
-                        const department = user.department.trim()
-                        const halfHourReminderEmbed = new EmbedBuilder()
-                            .setTitle(`${process.env.DAY_APPOINTMENT_MESSAGE}${formattedDate}`)
-                            .setDescription(`${process.env.HALF_HOUR_REMINDER_MESSAGE}**${timeDifferenceInMinutes}**${process.env.HALF_HOUR_REMINDER_2_MESSAGE}`)
-                        await channel.send({ content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [halfHourReminderEmbed] });
-                        await channel.setTopic('2')
+                    // Check if call appointment is 30 minutes away (with a margin of 5 minutes)
+                    if (timeDifferenceInMinutes >= (30 - 5) && timeDifferenceInMinutes <= (30 + 5)) {
+                        if (channel.topic === "0" || channel.topic === "1") {
+                            const formattedDate = reformatDate(user.callAppointment)
+                            const department = user.department.trim()
+                            const halfHourReminderEmbed = new EmbedBuilder()
+                                .setTitle(`${process.env.DAY_APPOINTMENT_MESSAGE}${formattedDate}`)
+                                .setDescription(`${process.env.HALF_HOUR_REMINDER_MESSAGE}**${timeDifferenceInMinutes}**${process.env.HALF_HOUR_REMINDER_2_MESSAGE}`)
+                            await channel.send({ content: `||<@${user.discord}> <@&${process.env[`${department.toUpperCase()}_ROLE_ID`]}> ||`, embeds: [halfHourReminderEmbed] });
+                            await channel.setTopic('2')
+                        }
                     }
                 }
             }
@@ -318,24 +325,28 @@ async function checkChannelDeletionAndChange() {
         });
 
         for (let i = 0; i < results.length; i++) {
-            const user = results[i];
-            const guild = client.guilds.cache.get(process.env.GUILD_ID);
-            const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
-            const channel = guild.channels.cache.find(channel => channel.name === channelName);
+            if (!results[i].discord) {
+            
+            } else {
+                const user = results[i];
+                const guild = client.guilds.cache.get(process.env.GUILD_ID);
+                const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
+                const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
-            if (channel) {
-                await channel.send(process.env.AFTER_CALL_MESSAGE)
-                const attachment = await discordTransripts.createTranscript(channel, {
-                    limit: -1,
-                    returnType: 'attachment',
-                    filename: `${channelName}.html`,
-                    saveImages: true,
-                    footerText: "Exported {number} message{s}",
-                    poweredBy: false
-                })
-                logIntaketoChannel(client, `Intake channel (${channelName}) for <@${user.discord}> automatically deleted, user was accepted.`, [255, 0, 0])
-                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
-                await channel.delete()
+                if (channel) {
+                    await channel.send(process.env.AFTER_CALL_MESSAGE)
+                    const attachment = await discordTransripts.createTranscript(channel, {
+                        limit: -1,
+                        returnType: 'attachment',
+                        filename: `${channelName}.html`,
+                        saveImages: true,
+                        footerText: "Exported {number} message{s}",
+                        poweredBy: false
+                    })
+                    logIntaketoChannel(client, `Intake channel (${channelName}) for <@${user.discord}> automatically deleted, user was accepted.`, [255, 0, 0])
+                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                    await channel.delete()
+                }
             }
         }
     } catch (error) {
@@ -358,24 +369,26 @@ async function checkChannelDeletionAndChange() {
         });
 
         for (let i = 0; i < results.length; i++) {
-            const user = results[i];
-            const guild = client.guilds.cache.get(process.env.GUILD_ID);
-            const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
-            const channel = guild.channels.cache.find(channel => channel.name === channelName);
+            if (!results[i].discord) {
+                const user = results[i];
+                const guild = client.guilds.cache.get(process.env.GUILD_ID);
+                const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
+                const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
-            if (channel) {
-                await channel.send(process.env.AFTER_CALL_MESSAGE)
-                const attachment = await discordTransripts.createTranscript(channel, {
-                    limit: -1,
-                    returnType: 'attachment',
-                    filename: `${channelName}.html`,
-                    saveImages: true,
-                    footerText: "Exported {number} message{s}",
-                    poweredBy: false
-                })
-                logIntaketoChannel(client, `Intake channel (<#${channel.name}>) for <@${user.discord}> automatically deleted, user was denied.`, [255, 0, 0])
-                await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
-                await channel.delete()
+                if (channel) {
+                    await channel.send(process.env.AFTER_CALL_MESSAGE)
+                    const attachment = await discordTransripts.createTranscript(channel, {
+                        limit: -1,
+                        returnType: 'attachment',
+                        filename: `${channelName}.html`,
+                        saveImages: true,
+                        footerText: "Exported {number} message{s}",
+                        poweredBy: false
+                    })
+                    logIntaketoChannel(client, `Intake channel (<#${channel.name}>) for <@${user.discord}> automatically deleted, user was denied.`, [255, 0, 0])
+                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                    await channel.delete()
+                }
             }
         }
     } catch (error) {
