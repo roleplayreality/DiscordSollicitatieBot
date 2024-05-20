@@ -70,7 +70,7 @@ async function createNewChannel (client, guild, department, results, channelName
                 .setDisabled(false) // Disable if the member doesn't have the required roles
     );
 
-    await channelN.send({content: `||<@${results.discord}> <@&${process.env[`${trimmedDepartment.toUpperCase()}_ROLE_ID`]}> <@${process.env.OM_ROLE_ID}> ||`,embeds:[welcomeEmbed], components: [buttonRow]})
+    await channelN.send({content: `||<@${results.discord}> <@&${process.env[`${trimmedDepartment.toUpperCase()}_ROLE_ID`]}> <@&${process.env.OM_ROLE_ID}> ||`,embeds:[welcomeEmbed], components: [buttonRow]})
 
     logIntaketoChannel(client, `Created channel (<#${channelN.id}>) for <@${results.discord}>`, [0, 255, 0])
 }
