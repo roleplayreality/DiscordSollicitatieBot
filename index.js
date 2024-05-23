@@ -76,7 +76,7 @@ async function checkAcceptedStatus() {
                                         footerText: "Exported {number} message{s}",
                                         poweredBy: false
                                     })
-                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.id}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0])
+                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.name}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0])
                                     await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                                     await existingChannel.delete();
 
@@ -160,7 +160,7 @@ async function plannedIntake(interaction, formattedDate) {
                         .setColor([0, 255, 0])
                         .setDescription(`[${process.env.TS3_HELP_MESSAGE}](${process.env.TS3_HELP_LINK})`)
                     interaction.message.channel.send({ content: `<@${discordId}>`, embeds: [callPlannedEmbed, ts3InstallEmbed, ts3HelpEmbed] })
-                    logIntaketoChannel(client, `Intake for channel (<#${interaction.message.channel.id}>, ${interaction.message.channel.id}) for <@${discordId}> (${discordId}), succesfully planned with date; ${formattedDate}. By; <@${interaction.user.id}> (${interaction.user.id})`, [0, 95, 255])
+                    logIntaketoChannel(client, `Intake for channel (<#${interaction.message.channel.id}>, ${interaction.message.channel.name}) for <@${discordId}> (${discordId}), succesfully planned with date; ${formattedDate}. By; <@${interaction.user.id}> (${interaction.user.id})`, [0, 95, 255])
                     //Reset the topic to 0 so it will still remind the users
                     if (interaction.message.channel.topic != "0") {
                         interaction.message.channel.setTopic('0')
@@ -255,7 +255,7 @@ async function checkCallAppointments() {
             if (results[i].discord) {
                 const user = results[i];
                 const guild = client.guilds.cache.get(process.env.GUILD_ID);
-                const channelName = `intake-${user.discord.slice(-4)}-${user.department.toLowerCase().trim()}`;
+                const channelName = `intake-${user.id}-${user.department.toLowerCase().trim()}`;
                 const channel = guild.channels.cache.find(channel => channel.name === channelName);
 
                 if (channel) {
@@ -337,7 +337,7 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.id}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0])
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0])
                     await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                     await channel.delete()
                 }
@@ -379,7 +379,7 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.id}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0])
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0])
                     await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
                     await channel.delete()
                 }
