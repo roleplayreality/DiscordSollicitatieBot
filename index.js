@@ -30,8 +30,8 @@ async function checkAcceptedStatus() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, error);
-                    reject(error);
+                    logToChannel(client, error.stack);
+                    reject(error, error.stack);
                 } else {
                     resolve(results);
                 }
@@ -76,8 +76,7 @@ async function checkAcceptedStatus() {
                                         footerText: "Exported {number} message{s}",
                                         poweredBy: false
                                     })
-                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.name}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0])
-                                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.name}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0], attachment)
                                     await existingChannel.delete();
 
                                     const channel = guild.channels.cache.find(channel => channel.name === channelName);
@@ -101,7 +100,7 @@ async function checkAcceptedStatus() {
                                 //User is not in the server, no logging to prevent spamming
                             }
                         } catch (error) {
-                            logToChannel(client, "error", error);
+                            logToChannel(client, "error", error.stack);
                             console.error(error);
                         }
                     }
@@ -145,7 +144,7 @@ async function plannedIntake(interaction, formattedDate) {
             const updateQuery = 'UPDATE aanmeldingen SET callAppointment = ? WHERE discord = ?';
             pool.query(updateQuery, [formatDate, discordId], (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, "error", error)
+                    logToChannel(client, "error", error.stack)
                     console.error('Error updating appointment data in callAppointment table:', error);
                 } else {
                     const callPlannedEmbed = new EmbedBuilder()
@@ -337,8 +336,7 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0])
-                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0], attachment)
                     await channel.delete()
                 }
             }
@@ -379,8 +377,7 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0])
-                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0], attachment)
                     await channel.delete()
                 }
             }
