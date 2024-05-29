@@ -30,8 +30,8 @@ async function checkAcceptedStatus() {
         const results = await new Promise((resolve, reject) => {
             pool.query(query, (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, error);
-                    reject(error);
+                    logToChannel(client, error.stack);
+                    reject(error, error.stack);
                 } else {
                     resolve(results);
                 }
@@ -100,7 +100,7 @@ async function checkAcceptedStatus() {
                                 //User is not in the server, no logging to prevent spamming
                             }
                         } catch (error) {
-                            logToChannel(client, "error", error);
+                            logToChannel(client, "error", error.stack);
                             console.error(error);
                         }
                     }
@@ -144,7 +144,7 @@ async function plannedIntake(interaction, formattedDate) {
             const updateQuery = 'UPDATE aanmeldingen SET callAppointment = ? WHERE discord = ?';
             pool.query(updateQuery, [formatDate, discordId], (error, results, fields) => {
                 if (error) {
-                    logToChannel(client, "error", error)
+                    logToChannel(client, "error", error.stack)
                     console.error('Error updating appointment data in callAppointment table:', error);
                 } else {
                     const callPlannedEmbed = new EmbedBuilder()
