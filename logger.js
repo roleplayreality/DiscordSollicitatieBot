@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { EmbedBuilder } = require('@discordjs/builders')
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js')
 
 
 // Function to log messages to a file and send them to a Discord channel
@@ -14,7 +14,7 @@ async function logToChannel(client, type, message) {
             logEmbed.setTitle(` `)
             logEmbed.setDescription(`A error came up: \`\`\`${message}\`\`\``)
             logEmbed.setColor([255, 0, 0]);
-            await channel.send({ content: `<@everyone>`, embeds: [logEmbed] });
+            await channel.send({ content: `@everyone`, embeds: [logEmbed] });
             console.error(message)
             // Log the message to a file
             fs.appendFile('errorLog.txt', `${new Date().toLocaleString()}: ${message}\n`, (err) => {
@@ -37,7 +37,7 @@ async function logToChannel(client, type, message) {
 }
 
 // Function to log messages to a file and send them to a Discord channel
-function logIntaketoChannel(client, message, color) {
+function logIntaketoChannel(client, message, color, attachment) {
     // Log the message to a file
     fs.appendFile('intakeLog.txt', `${new Date().toLocaleString()}: ${message}\n`, (err) => {
         if (err) {
@@ -48,12 +48,22 @@ function logIntaketoChannel(client, message, color) {
     // Send the message to the specified Discord channel
     const channel = client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID);
     if (channel) {
-        const intakeLogEmbed = new EmbedBuilder()
-            .setColor(color)
-            .setDescription(message)
-            .setTimestamp()
-            .setFooter({ text: process.env.FOOTER_MESSAGE, iconURL: process.env.FOOTER_IMAGE });
-        channel.send({embeds:[intakeLogEmbed]})
+        if (attachment) {
+            const intakeLogEmbed = new EmbedBuilder()
+                .setColor(color)
+                .setDescription(message)
+                .setTimestamp()
+                .setFooter({ text: process.env.FOOTER_MESSAGE, iconURL: process.env.FOOTER_IMAGE });
+            channel.send({ embeds: [intakeLogEmbed], files: [attachment] })
+        } else {
+            const intakeLogEmbed = new EmbedBuilder()
+                .setColor(color)
+                .setDescription(message)
+                .setTimestamp()
+                .setFooter({ text: process.env.FOOTER_MESSAGE, iconURL: process.env.FOOTER_IMAGE });
+            channel.send({ embeds: [intakeLogEmbed] })
+        }
+
     } else {
         console.error('Invalid channel ID or channel type.');
     }

@@ -76,8 +76,7 @@ async function checkAcceptedStatus() {
                                         footerText: "Exported {number} message{s}",
                                         poweredBy: false
                                     })
-                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.name}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0])
-                                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                                    logIntaketoChannel(client, `Intake channel (${existingChannel.name}, ${existingChannel.name}) for <@${results[i].discord}> (${results[i].discord}) automatically deleted, users's department was changed.`, [255, 0, 0], attachment)
                                     await existingChannel.delete();
 
                                     const channel = guild.channels.cache.find(channel => channel.name === channelName);
@@ -337,8 +336,7 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0])
-                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was accepted.`, [255, 0, 0], attachment)
                     await channel.delete()
                 }
             }
@@ -379,8 +377,7 @@ async function checkChannelDeletionAndChange() {
                         footerText: "Exported {number} message{s}",
                         poweredBy: false
                     })
-                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0])
-                    await client.channels.cache.get(process.env.INTAKE_LOG_CHANNEL_ID).send({ files: [attachment] })
+                    logIntaketoChannel(client, `Intake channel (${channelName}, ${channel.name}) for <@${user.discord}> (${user.discord}) automatically deleted, user was denied.`, [255, 0, 0], attachment)
                     await channel.delete()
                 }
             }
